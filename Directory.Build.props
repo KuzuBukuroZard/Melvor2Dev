@@ -22,10 +22,11 @@
     <GameDir Condition="'$(_SteamPath)' != ''">$([System.IO.Path]::GetFullPath('$(_SteamPath)\steamapps\common\Melvor Idle 2'))</GameDir>
   </PropertyGroup>
 
+  <!-- -p:GameDir=... 是全局属性，在这里改写会被忽略，所以不改 GameDir，另用 _GameRoot 补齐末尾的反斜杠 -->
   <PropertyGroup Condition="'$(GameDir)' != ''">
-    <GameDir>$([MSBuild]::EnsureTrailingSlash('$(GameDir)'))</GameDir>
-    <GameDataDir>$(GameDir)data_GamesByMalcs.Melvor2_windows_x86_64\</GameDataDir>
+    <_GameRoot>$([MSBuild]::EnsureTrailingSlash('$(GameDir)'))</_GameRoot>
+    <GameDataDir>$(_GameRoot)data_GamesByMalcs.Melvor2_windows_x86_64\</GameDataDir>
     <!-- mod 部署目录：<游戏根目录>\Melvor2Patch\，注入的引导代码从这里加载 Melvor2Patch.dll -->
-    <ModDeployDir>$(GameDir)Melvor2Patch\</ModDeployDir>
+    <ModDeployDir>$(_GameRoot)Melvor2Patch\</ModDeployDir>
   </PropertyGroup>
 </Project>

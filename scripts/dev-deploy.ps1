@@ -46,16 +46,24 @@ $running = Get-Process -Name 'Melvor2' -ErrorAction SilentlyContinue
 if ($running) { Stop-WithError "游戏正在运行（PID $($running.Id -join ', ')），请先关闭游戏。" }
 Write-Host '游戏未运行。'
 
+Write-Step '定位游戏目录'
+# 构建（部署 mod）与注入必须用同一个目录：两者各自查找时，构建可能找不到游戏而悄悄跳过部署，注入器却找到了游戏。
+# 未指定时由 MSBuild 按 Directory.Build.props 的规则解析（local.props / Steam 注册表）
+if (-not $GameDir) {
+    $GameDir = "$(& dotnet msbuild (Join-Path $root 'src\Melvor2Patch\Melvor2Patch.csproj') -nologo -getProperty:GameDir)".Trim().TrimEnd('\', '/')
+}
+if (-not $GameDir -or -not (Test-Path (Join-Path $GameDir 'data_GamesByMalcs.Melvor2_windows_x86_64\GamesByMalcs.Melvor2.dll'))) {
+    Stop-WithError "找不到游戏（GameDir='$GameDir'）。请用 -GameDir 指定，或复制 Directory.Build.local.props.example 为 Directory.Build.local.props 后修改。"
+}
+Write-Host $GameDir
+
 Write-Step "构建解决方案（$Configuration）"
-$buildArgs = @('build', $solution, '-c', $Configuration, '-nologo', '-v', 'minimal')
-if ($GameDir) { $buildArgs += "-p:GameDir=$GameDir" }
-& dotnet @buildArgs
+& dotnet build $solution -c $Configuration -nologo -v minimal "-p:GameDir=$GameDir"
 if ($LASTEXITCODE -ne 0) { Stop-WithError '构建失败，请查看上面的编译错误。' }
 
 # 用 dotnet run 调用 Injector，不依赖具体输出路径；--no-build 复用上一步的构建结果
 function Invoke-Injector([string[]]$injectorArgs) {
-    if ($GameDir) { $injectorArgs += @('--game', $GameDir) }
-    & dotnet run --project $injectorProject -c $Configuration --no-build -- @injectorArgs
+    & dotnet run --project $injectorProject -c $Configuration --no-build -- @injectorArgs --game $GameDir
 }
 
 Write-Step '注入加载入口'
