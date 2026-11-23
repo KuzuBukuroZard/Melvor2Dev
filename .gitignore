@@ -1,0 +1,22 @@
+# 本地反编译参考与资源（含游戏版权内容，切勿提交）
+Melvor2dll/
+Melvor2dlloffical/
+Melvor2Assets/
+MelvorBase.json
+
+# 本机配置
+Directory.Build.local.props
+
+# 构建产物
+bin/
+obj/
+dist/
+*.user
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# 旧仓库备份
+.git-old/

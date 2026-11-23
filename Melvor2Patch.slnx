@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/Melvor2Injector/Melvor2Injector.csproj" />
+  <Project Path="src/Melvor2Patch/Melvor2Patch.csproj" />
+</Solution>

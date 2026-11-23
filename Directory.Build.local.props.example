@@ -1,0 +1,9 @@
+<Project>
+  <!--
+    复制为 Directory.Build.local.props 后修改为你的游戏目录（包含 Melvor2.exe 的目录）。
+    该文件不进版本库。Steam 默认库中的安装通常无需此文件。
+  -->
+  <PropertyGroup>
+    <GameDir Condition="'$(GameDir)' == ''">D:\SteamLibrary\steamapps\common\Melvor Idle 2</GameDir>
+  </PropertyGroup>
+</Project>

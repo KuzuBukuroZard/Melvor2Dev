@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>Melvor2Patch</AssemblyName>
+    <RootNamespace>Melvor2Patch</RootNamespace>
+    <!-- mod 由游戏 ALC 直接按路径加载，不需要 deps.json -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <DebugType>portable</DebugType>
+    <!-- 构建后自动复制到游戏目录；可用 -p:DeployToGame=false 关闭（打包发布时使用） -->
+    <DeployToGame Condition="'$(DeployToGame)' == ''">true</DeployToGame>
+  </PropertyGroup>
+
+  <!-- 游戏程序集只用于编译，运行时使用游戏 ALC 中已加载的那一份，因此不复制到输出 -->
+  <ItemGroup>
+    <Reference Include="GamesByMalcs.Melvor2">
+      <HintPath>$(GameDataDir)GamesByMalcs.Melvor2.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="GodotSharp">
+      <HintPath>$(GameDataDir)GodotSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(HarmonyDir)0Harmony.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CheckGameDir" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(GameDataDir)' == '' Or !Exists('$(GameDataDir)GamesByMalcs.Melvor2.dll')"
+           Text="找不到 Melvor Idle 2 游戏目录（当前 GameDir='$(GameDir)'）。编译 mod 需要引用游戏程序集，请用 -p:GameDir=... 指定，或复制 Directory.Build.local.props.example 为 Directory.Build.local.props 并填写路径。" />
+  </Target>
+
+  <Target Name="DeployModToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
+    <ItemGroup>
+      <_ModDeployFile Include="$(TargetPath)" />
+      <_ModDeployFile Include="$(TargetDir)$(TargetName).pdb" Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+      <_ModDeployFile Include="$(HarmonyDir)0Harmony.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_ModDeployFile)" DestinationFolder="$(ModDeployDir)" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Melvor2Patch 已部署 -> $(ModDeployDir)" />
+  </Target>
+
+</Project>

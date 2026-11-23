@@ -1,0 +1,31 @@
+<Project>
+  <!--
+    解决方案共享配置。
+
+    游戏目录（GameDir）按以下优先级确定：
+      1. 命令行参数或同名环境变量：dotnet build -p:GameDir="D:\SteamLibrary\steamapps\common\Melvor Idle 2"
+      2. 仓库根目录的 Directory.Build.local.props（不进版本库，可参考 Directory.Build.local.props.example）
+      3. 注册表中的 Steam 安装路径 + \steamapps\common\Melvor Idle 2
+    只有 Melvor2Patch 需要游戏目录（编译时引用游戏程序集）；Melvor2Injector 运行时会自行定位游戏。
+  -->
+  <PropertyGroup>
+    <Version>0.2.0</Version>
+    <Authors>Melvor2Patch contributors</Authors>
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <HarmonyDir>$(RepoRoot)lib\Harmony\</HarmonyDir>
+  </PropertyGroup>
+
+  <Import Project="$(RepoRoot)Directory.Build.local.props" Condition="Exists('$(RepoRoot)Directory.Build.local.props')" />
+
+  <PropertyGroup Condition="'$(GameDir)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">
+    <_SteamPath>$([MSBuild]::GetRegistryValueFromView('HKEY_CURRENT_USER\Software\Valve\Steam', 'SteamPath', null, RegistryView.Default))</_SteamPath>
+    <GameDir Condition="'$(_SteamPath)' != ''">$([System.IO.Path]::GetFullPath('$(_SteamPath)\steamapps\common\Melvor Idle 2'))</GameDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GameDir)' != ''">
+    <GameDir>$([MSBuild]::EnsureTrailingSlash('$(GameDir)'))</GameDir>
+    <GameDataDir>$(GameDir)data_GamesByMalcs.Melvor2_windows_x86_64\</GameDataDir>
+    <!-- mod 部署目录：<游戏根目录>\Melvor2Patch\，注入的引导代码从这里加载 Melvor2Patch.dll -->
+    <ModDeployDir>$(GameDir)Melvor2Patch\</ModDeployDir>
+  </PropertyGroup>
+</Project>
