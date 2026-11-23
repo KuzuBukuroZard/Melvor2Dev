@@ -34,7 +34,7 @@ internal static class Cli
 {
     public static int Run(string[] args)
     {
-        string command = "patch";
+        string command = "install";
         string? gameDirectory = null;
         bool force = false, dryRun = false, showIl = false, removeFiles = false;
 
@@ -197,7 +197,7 @@ internal static class UsageText
           Melvor2Injector [命令] [选项]
 
         命令：
-          install    复制 mod 文件到游戏目录并注入加载入口（推荐）
+          install    复制 mod 文件到游戏目录并注入加载入口（推荐，默认）
           uninstall  还原原版游戏程序集（加 --remove-files 同时删除 mod 文件夹与配置）
           status     查看注入状态与 mod 文件
           patch      只注入加载入口，不复制 mod 文件（开发用）

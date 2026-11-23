@@ -70,16 +70,16 @@ internal static class GameAssemblyPatcher
 
     public static int Restore(GamePaths paths)
     {
-        RequireCleanBackup(paths);
-
+        // 先于备份检查：当前已是原版时不需要备份（备份丢失也能正常卸载）；
+        // 且可能是游戏更新后的新版本，此时用旧备份覆盖反而会降级
         if (File.Exists(paths.GameAssembly)
             && ReadState(paths.GameAssembly, paths.DataDirectory) == AssemblyState.Clean)
         {
-            // 当前已是原版：可能是游戏更新后的新版本，此时用旧备份覆盖反而会降级
             Console.WriteLine("当前游戏程序集未注入（原版），无需还原。");
             return 0;
         }
 
+        RequireCleanBackup(paths);
         WriteAtomically(paths.GameAssembly, File.ReadAllBytes(paths.BackupAssembly));
         Console.WriteLine($"已从备份还原：{paths.BackupAssembly} -> {paths.GameAssembly}");
         return 0;
