@@ -9,7 +9,7 @@
     只有 Melvor2Patch 需要游戏目录（编译时引用游戏程序集）；Melvor2Injector 运行时会自行定位游戏。
   -->
   <PropertyGroup>
-    <Version>0.2.0</Version>
+    <Version>0.2.1</Version>
     <Authors>Melvor2Patch contributors</Authors>
     <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
     <HarmonyDir>$(RepoRoot)lib\Harmony\</HarmonyDir>
