@@ -8,7 +8,7 @@
       README.txt                 使用说明
       LICENSE.txt / THIRD-PARTY-NOTICES.txt
 
-    编译 mod 需要本机安装了游戏（引用游戏程序集），见 Directory.Build.props。
+    本机装有游戏时 mod 引用真实的游戏程序集编译，否则使用 lib\GameRefs\ 中的引用存根（见 Melvor2Patch.csproj）。
 
 .EXAMPLE
     .\scripts\build-release.ps1
@@ -34,9 +34,11 @@ function Stop-WithError([string]$text) {
     exit 1
 }
 
-# 版本号取自 Directory.Build.props
+# 版本号取自 Directory.Build.props；CI（release.yml）从这里的输出取版本号，不再自己解析
 [xml]$props = Get-Content (Join-Path $root 'Directory.Build.props')
 $version = ($props.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
+if (-not $version) { Stop-WithError 'Directory.Build.props 中没有 <Version>。' }
+if ($env:GITHUB_OUTPUT) { "version=$version" >> $env:GITHUB_OUTPUT }
 $name = "Melvor2Patch-v$version"
 $dist = Join-Path $root 'dist'
 $stage = Join-Path $dist $name

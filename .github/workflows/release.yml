@@ -41,13 +41,17 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Read version
+      # build-release.ps1 读取 Directory.Build.props 的 <Version> 并写入 steps.build.outputs.version
+      - name: Build package
+        id: build
+        shell: pwsh
+        run: ./scripts/build-release.ps1
+
+      - name: Decide release
         id: version
         shell: pwsh
         run: |
-          [xml]$props = Get-Content Directory.Build.props
-          $version = ($props.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
-          if (-not $version) { throw "Directory.Build.props 中没有 <Version>" }
+          $version = '${{ steps.build.outputs.version }}'
           $tag = "v$version"
           $exists = [bool](git tag -l $tag)
           $release = ('${{ github.event_name }}' -ne 'pull_request') -and -not $exists
@@ -56,10 +60,6 @@ jobs:
           "release=$($release.ToString().ToLower())" >> $env:GITHUB_OUTPUT
           "prerelease=$($version.Contains('-').ToString().ToLower())" >> $env:GITHUB_OUTPUT
           Write-Host "版本 $version，tag 已存在：$exists，本次发布：$release"
-
-      - name: Build package
-        shell: pwsh
-        run: ./scripts/build-release.ps1
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
