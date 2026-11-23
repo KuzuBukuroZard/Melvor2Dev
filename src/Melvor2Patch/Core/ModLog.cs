@@ -13,8 +13,6 @@ internal static class ModLog
     private static readonly Lock Gate = new();
     private static StreamWriter? _writer;
 
-    public static string? FilePath { get; private set; }
-
     public static void Initialize(string path)
     {
         lock (Gate)
@@ -24,12 +22,10 @@ internal static class ModLog
                 _writer?.Dispose();
                 var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
                 _writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)) { AutoFlush = true };
-                FilePath = path;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _writer = null;
-                FilePath = null;
                 ForwardToGodot(isError: true, $"无法创建日志文件 {path}：{ex.Message}");
             }
         }

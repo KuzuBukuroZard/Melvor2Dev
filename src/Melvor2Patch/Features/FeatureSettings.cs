@@ -53,7 +53,8 @@ internal static class FeatureSettings
         SettingsData data = Read(_path);
 
         GodModeFeature.Enabled = data.GodMode;
-        foreach (string name in data.NoConsumption)
+        // 手动编辑可能写成 "NoConsumption": null
+        foreach (string name in data.NoConsumption ?? [])
         {
             // 旧版的 Bait / Runes 会展开为拆分后的两个类别，下次保存时写入新名称
             if (Consumables.TryParseSavedName(name, out IReadOnlyList<ConsumableCategory> categories))

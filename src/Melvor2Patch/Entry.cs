@@ -56,8 +56,17 @@ public static class Entry
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Start()
     {
-        // 先恢复功能开关，再应用补丁：保证从游戏第一帧起（包括读档时的离线结算）就按保存的状态生效
-        FeatureSettings.Load();
+        // 先恢复功能开关，再应用补丁：保证从游戏第一帧起（包括读档时的离线结算）就按保存的状态生效。
+        // 配置出错只丢配置，不能连累补丁
+        try
+        {
+            FeatureSettings.Load();
+        }
+        catch (Exception ex)
+        {
+            ModLog.Error("加载配置失败，使用默认配置。", ex);
+        }
+
         PatchManager.ApplyAll();
         MetadataDumper.RunIfRequested();
     }

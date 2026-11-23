@@ -20,7 +20,8 @@ internal sealed record SpawnEntry<T>(T Object, string Name, string Id, Texture2D
 /// </summary>
 internal static class ItemSpawner
 {
-    private static Game? _cachedGame;
+    // 弱引用：回到主菜单 / 换存档后，旧的 Game 不会被这里一直留在内存里
+    private static readonly WeakReference<Game?> CachedGame = new(null);
     private static List<SpawnEntry<Item>> _items = [];
     private static List<SpawnEntry<Currency>> _currencies = [];
 
@@ -35,7 +36,7 @@ internal static class ItemSpawner
             return false;
         }
 
-        if (!ReferenceEquals(_cachedGame, game))
+        if (!CachedGame.TryGetTarget(out Game? cached) || !ReferenceEquals(cached, game))
         {
             _items = game.Data.GetDataRegistryOutput<Item>().GetAllObjects()
                 .Select(i => new SpawnEntry<Item>(i, i.DisplayName.GetPluralText(1), i.Id, i.Icon))
@@ -45,7 +46,7 @@ internal static class ItemSpawner
                 .Select(c => new SpawnEntry<Currency>(c, c.DisplayName.Text, c.Id, c.Icon))
                 .OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
-            _cachedGame = game;
+            CachedGame.SetTarget(game);
             ModLog.Info($"刷物品：已加载 {_items.Count} 个物品、{_currencies.Count} 种货币。");
         }
 
