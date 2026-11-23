@@ -16,14 +16,24 @@
     <DeployToGame Condition="'$(DeployToGame)' == ''">true</DeployToGame>
   </PropertyGroup>
 
-  <!-- 游戏程序集只用于编译，运行时使用游戏 ALC 中已加载的那一份，因此不复制到输出 -->
+  <!--
+    游戏程序集只用于编译，运行时使用游戏 ALC 中已加载的那一份，因此不复制到输出。
+    本机装有游戏时引用真实程序集（能及时发现游戏更新导致的 API 变化）；
+    否则（如 CI）引用 lib\GameRefs\ 中的存根（见 scripts/update-game-refs.ps1）。
+  -->
+  <PropertyGroup>
+    <HasGame Condition="'$(GameDataDir)' != '' And Exists('$(GameDataDir)GamesByMalcs.Melvor2.dll')">true</HasGame>
+    <GameRefDir Condition="'$(HasGame)' == 'true'">$(GameDataDir)</GameRefDir>
+    <GameRefDir Condition="'$(HasGame)' != 'true'">$(RepoRoot)lib\GameRefs\</GameRefDir>
+  </PropertyGroup>
+
   <ItemGroup>
     <Reference Include="GamesByMalcs.Melvor2">
-      <HintPath>$(GameDataDir)GamesByMalcs.Melvor2.dll</HintPath>
+      <HintPath>$(GameRefDir)GamesByMalcs.Melvor2.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="GodotSharp">
-      <HintPath>$(GameDataDir)GodotSharp.dll</HintPath>
+      <HintPath>$(GameRefDir)GodotSharp.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="0Harmony">
@@ -32,12 +42,13 @@
     </Reference>
   </ItemGroup>
 
-  <Target Name="CheckGameDir" BeforeTargets="ResolveAssemblyReferences">
-    <Error Condition="'$(GameDataDir)' == '' Or !Exists('$(GameDataDir)GamesByMalcs.Melvor2.dll')"
-           Text="找不到 Melvor Idle 2 游戏目录（当前 GameDir='$(GameDir)'）。编译 mod 需要引用游戏程序集，请用 -p:GameDir=... 指定，或复制 Directory.Build.local.props.example 为 Directory.Build.local.props 并填写路径。" />
+  <Target Name="CheckGameRefs" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(GameRefDir)GamesByMalcs.Melvor2.dll')"
+           Text="找不到游戏程序集（GameDir='$(GameDir)'），且 lib\GameRefs\ 中没有存根。请用 -p:GameDir=... 指定游戏目录，或运行 scripts\update-game-refs.ps1 生成存根。" />
+    <Message Importance="high" Condition="'$(HasGame)' != 'true'" Text="未找到本机游戏，使用 lib\GameRefs\ 中的引用存根编译。" />
   </Target>
 
-  <Target Name="DeployModToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true'">
+  <Target Name="DeployModToGame" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true' And '$(HasGame)' == 'true'">
     <ItemGroup>
       <_ModDeployFile Include="$(TargetPath)" />
       <_ModDeployFile Include="$(TargetDir)$(TargetName).pdb" Condition="Exists('$(TargetDir)$(TargetName).pdb')" />

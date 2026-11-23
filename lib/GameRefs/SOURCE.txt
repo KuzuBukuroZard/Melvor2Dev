@@ -1,0 +1,4 @@
+﻿# 由 scripts/update-game-refs.ps1 生成，只含公开 API 签名，不含任何方法体代码。
+generated: 2026-11-24
+GamesByMalcs.Melvor2.dll  version=1.0.0.0  source-sha256=F71299AE54681847
+GodotSharp.dll  version=4.7.2.0  source-sha256=D40794412CC24C1D

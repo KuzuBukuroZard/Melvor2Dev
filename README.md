@@ -35,10 +35,10 @@
 
 ## 从源码构建
 
-需要：Windows、[.NET 10 SDK](https://dotnet.microsoft.com/download)、已安装的 Melvor Idle 2（编译 mod 需要引用游戏程序集，仓库不包含任何游戏文件）。
+需要：Windows、[.NET 10 SDK](https://dotnet.microsoft.com/download)。本机装有 Melvor Idle 2 时编译引用真实的游戏程序集；没有安装时自动改用 `lib/GameRefs/` 中的引用程序集存根。
 
 ```powershell
-# 开发：构建 + 部署 mod 到游戏目录 + 注入
+# 开发：构建 + 部署 mod 到游戏目录 + 注入（需要本机装有游戏）
 powershell -ExecutionPolicy Bypass -File .\scripts\dev-deploy.ps1
 
 # 打包发布：生成 dist\Melvor2Patch-vX.Y.Z.zip
@@ -49,14 +49,30 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build-release.ps1
 
 Injector 命令行：`Melvor2Injector [install|uninstall|status|patch|restore] [--game <路径>] [--dry-run]`，详见 `Melvor2Injector help`。
 
+### 发布新版本
+
+发布由 GitHub Actions（`.github/workflows/release.yml`）自动完成：修改 `Directory.Build.props` 中的 `<Version>` 并 push 到 `main`，若 tag `v<版本>` 尚不存在，就会自动编译、打包并创建 Release（附带自动生成的更新说明）。版本号含 `-`（如 `0.3.0-beta.1`）时发布为 Pre-release。版本号未变的 push 与 PR 只做构建检查。
+
+### 游戏引用存根（lib/GameRefs）
+
+云端没有游戏，仓库也不包含任何游戏文件。`lib/GameRefs/` 中是用 [JetBrains Refasmer](https://github.com/JetBrains/Refasmer) 生成的**引用程序集**：只保留公开类型与方法签名，不含任何方法体代码和私有/内部类型，无法运行，仅用于编译。来源版本记录在 `lib/GameRefs/SOURCE.txt`。
+
+游戏更新后如果 mod 用到的 API 有变化（本机编译失败或需要新的游戏类型），在装有游戏的机器上运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\update-game-refs.ps1   # 然后提交 lib/GameRefs/
+```
+
 ### 目录结构
 
 ```
 src/Melvor2Patch/       mod 本体（Core 基础设施 / Features 各功能 / UI 窗口）
 src/Melvor2Injector/    安装器与注入器
 lib/Harmony/            0Harmony.dll（MIT）
-scripts/                开发部署与打包脚本
+lib/GameRefs/           游戏引用程序集存根（仅签名，用于无游戏环境编译）
+scripts/                开发部署、打包、更新存根脚本
 packaging/              发布包附带的说明与第三方许可
+.github/workflows/      自动构建与发布
 ```
 
 ### 调试提示

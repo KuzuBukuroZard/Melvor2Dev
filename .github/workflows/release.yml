@@ -1,0 +1,85 @@
+# 按版本号自动发布：
+# - push 到 main 时读取 Directory.Build.props 的 <Version>；若 tag v<版本> 尚不存在，则编译、打包并创建 GitHub Release（同时创建 tag）。
+#   版本号未变化的 push 只做构建检查，不发布。版本号含 "-"（如 0.3.0-beta.1）时发布为 Pre-release。
+# - pull_request 只做构建检查。
+# - 云端没有游戏，mod 引用 lib/GameRefs/ 中的引用程序集存根编译（见 scripts/update-game-refs.ps1）。
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "lib/**"
+      - "packaging/**"
+      - "scripts/build-release.ps1"
+      - "Directory.Build.props"
+      - "Melvor2Patch.slnx"
+      - ".github/workflows/release.yml"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Read version
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content Directory.Build.props
+          $version = ($props.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
+          if (-not $version) { throw "Directory.Build.props 中没有 <Version>" }
+          $tag = "v$version"
+          $exists = [bool](git tag -l $tag)
+          $release = ('${{ github.event_name }}' -ne 'pull_request') -and -not $exists
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "release=$($release.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          "prerelease=$($version.Contains('-').ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          Write-Host "版本 $version，tag 已存在：$exists，本次发布：$release"
+
+      - name: Build package
+        shell: pwsh
+        run: ./scripts/build-release.ps1
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Melvor2Patch-v${{ steps.version.outputs.version }}
+          path: dist/Melvor2Patch-v${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+
+      - name: Create release
+        if: steps.version.outputs.release == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ghArgs = @(
+            'release', 'create', '${{ steps.version.outputs.tag }}',
+            'dist/Melvor2Patch-v${{ steps.version.outputs.version }}.zip',
+            '--title', 'Melvor2Patch ${{ steps.version.outputs.tag }}',
+            '--target', '${{ github.sha }}',
+            '--generate-notes'
+          )
+          if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { $ghArgs += '--prerelease' }
+          gh @ghArgs
